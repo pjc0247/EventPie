@@ -2,6 +2,7 @@
 
 #include "Event.h"
 #include "Timer.h"
+#include "Task.h"
 
 #include <queue>
 #include <vector>
@@ -13,17 +14,20 @@ using namespace std::chrono;
 namespace EventPie{
     
     static vector<Timer*> timers;
-    
+
     static bool running;
     
     int run(){
-        
         running = true;
         
         auto timePoint = system_clock::now();
         
         while( running ){
+            /* process event queue */
             
+            if( !running ) break;
+            
+            /* process timers */
             auto loopTime =
                 duration_cast<milliseconds>(system_clock::now() - timePoint).count();
             
@@ -31,11 +35,14 @@ namespace EventPie{
                 timePoint = system_clock::now();
             
                 for( auto &timer : timers ){
-                    timer->step( loopTime );
+                    timer->step( (int)loopTime );
                 }
             }
         }
         return 0;
+    }
+    void stop(){
+        running = false;
     }
     
     void addTimer(Timer *timer){

@@ -7,6 +7,7 @@ namespace EventPie{
     class Event;
     
     int run();
+    void stop();
     
     void addTimer(Timer *timer);
     void removeTimer(Timer *timer);

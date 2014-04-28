@@ -5,6 +5,7 @@ using namespace std;
 namespace EventPie{
 
     ThreadPool::ThreadPool(){
+        createThreads( THREAD_POOL_DEFAULT_SIZE );
     }
     ThreadPool::ThreadPool(int nThreads){
         createThreads( nThreads );
@@ -30,9 +31,9 @@ namespace EventPie{
         signal.notify_all();
     }
     
-    void ThreadPool::enqueue(Job job){
+    void ThreadPool::enqueue(Task task){
         unique_lock<mutex> lock( queueMutex );
-            jobs.push( job );
+            tasks.push( task );
         lock.unlock();
         
         signal.notify_one();
@@ -41,22 +42,22 @@ namespace EventPie{
     void ThreadPool::worker(){
         
         while( running ){
-            Job job;
+            Task task;
             
             unique_lock<mutex> lock( queueMutex );
-                if( jobs.empty() ){
+                if( tasks.empty() ){
                     signal.wait( lock );
                 
-                    if( jobs.empty() )
+                    if( tasks.empty() )
                         continue;
                 }
             
-                job = jobs.front();
-                jobs.pop();
+                task = tasks.front();
+                tasks.pop();
             lock.unlock();
             
-            /* process job */
-            job();
+            /* process task */
+            task();
         }
     }
 };

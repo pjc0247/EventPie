@@ -1,6 +1,8 @@
 #ifndef _THREAD_POOL_H
 #define _THREAD_POOL_H
 
+#include "Task.h"
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -10,17 +12,18 @@
 #include <vector>
 #include <queue>
 
+#define THREAD_POOL_DEFAULT_SIZE 20
+
 namespace EventPie{
     
     class ThreadPool{
     public:
-        typedef std::function<void()> Job;
         
         ThreadPool();
         ThreadPool(int nThreads);
         virtual ~ThreadPool();
         
-        void enqueue(Job job);
+        void enqueue(Task job);
         
         void kill();
         
@@ -31,7 +34,7 @@ namespace EventPie{
     protected:
         std::vector<std::thread> threads;
         
-        std::queue<Job> jobs;
+        std::queue<Task> tasks;
         std::condition_variable signal;
         std::mutex queueMutex;
         

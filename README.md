@@ -1,4 +1,4 @@
-EvnetPie
+EventPie
 ========
 
 pie event pie event pie

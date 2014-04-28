@@ -17,7 +17,7 @@ int main(){
   
   /* setup */
   
-  Socket::accept( socket,
+  Socket::accept( serverSocket,
     [](int clientSocket, sockaddr addr, socklen_t addrLen){
       printf("new connection\n");
       

@@ -74,6 +74,7 @@ namespace EventPie{
             if( timers[i] == timer ){
                 timers[i] = timers.back();
                 timers.pop_back();
+                break;
             }
         }
     }

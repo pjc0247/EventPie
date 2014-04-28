@@ -1,6 +1,5 @@
 #include "EventPie.h"
 
-#include "Reaction.h"
 #include "Timer.h"
 #include "ThreadPool.h"
 
@@ -35,8 +34,8 @@ namespace EventPie{
     }
     void processTimers(int dt){
         /* process timers */
-        for( auto &timer : timers ){
-            timer->step( dt );
+		for(int i=0;i<timers.size();i++){
+            timers[i]->step( dt );
         }
     }
     

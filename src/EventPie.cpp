@@ -32,7 +32,6 @@ namespace EventPie{
             tasks.pop();
         }
         lock.unlock();
-
     }
     void processTimers(int dt){
         /* process timers */

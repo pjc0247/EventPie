@@ -72,7 +72,7 @@ namespace EventPie{
         /* fast-remove */
         for(int i=0;i<timers.size();i++){
             if( timers[i] == timer ){
-                std::swap( timers[i], timers.back() );
+                timers[i] = timers.back();
                 timers.pop_back();
             }
         }

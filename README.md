@@ -69,7 +69,7 @@ using namespace EventPie;
 
 int main(){
   addTask( [](){
-    printf("
+    printf("task\n");
   });
   
   run();

@@ -21,7 +21,7 @@ int main(){
     [](int clientSocket, sockaddr addr, socklen_t addrLen){
       printf("new connection\n");
       
-      Socket::recv( clientSocket,
+      Socket::recv( clientSocket, BUFSIZE, 0, 
         [clientSocket](void *data,int len){
           printf("data received\n");
       });

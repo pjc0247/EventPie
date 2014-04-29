@@ -48,7 +48,7 @@ int main(){
     
     life --;
     if( life == 0 )
-      timer->stop();
+      delete timer;
   }, 150);
   
   run();

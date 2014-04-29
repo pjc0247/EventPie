@@ -18,7 +18,7 @@ namespace EventPie{
         addTimer( this );
     }
     Timer::~Timer(){
-        
+        stop();
     }
     
     void Timer::step(int dt){

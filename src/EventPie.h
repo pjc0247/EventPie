@@ -13,9 +13,10 @@ namespace EventPie{
     void addTimer(Timer *timer);
     void removeTimer(Timer *timer);
     
-    void addTask(Task task);
-    
+    //
     void defer(Task task);
+    // 
+    void deferAsync(Task task);
 };
 
 #endif //_EVENT_PIE_H

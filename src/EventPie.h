@@ -1,11 +1,12 @@
 #ifndef _EVENT_PIE_H
 #define _EVENT_PIE_H
 
+#include "Timer.h"
 #include "Task.h"
 
+#include "Util.h"
+
 namespace EventPie{
-    class Timer;
-    class Reaction;
     
     int run();
     void stop();
@@ -13,9 +14,7 @@ namespace EventPie{
     void addTimer(Timer *timer);
     void removeTimer(Timer *timer);
     
-    //
     void defer(Task task);
-    // 
     void deferAsync(Task task);
 };
 

@@ -1,5 +1,6 @@
 #include "EventPie.h"
 
+#include "Reaction.h"
 #include "Timer.h"
 #include "ThreadPool.h"
 
@@ -27,15 +28,16 @@ namespace EventPie{
         unique_lock<mutex> lock( taskQueueMutex );
         while( !tasks.empty() ){
             Task task = tasks.front();
-                task();
             tasks.pop();
+                task();
         }
         lock.unlock();
+
     }
     void processTimers(int dt){
         /* process timers */
-		for(int i=0;i<timers.size();i++){
-            timers[i]->step( dt );
+        for( auto &timer : timers ){
+            timer->step( dt );
         }
     }
     
@@ -78,12 +80,12 @@ namespace EventPie{
         }
     }
     
-    void addTask(Task task){
+    void defer(Task task){
         unique_lock<mutex> lock( taskQueueMutex );
             tasks.push( task );
     }
     
-    void defer(Task task){
+    void deferAsync(Task task){
         threadPool.enqueue( task );
     }
 }

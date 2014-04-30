@@ -22,5 +22,8 @@ int main(int argc,char **argv){
           printf("client disconnected\n");
         });
     });
+    
+  run();
+  
   return 0;
 }

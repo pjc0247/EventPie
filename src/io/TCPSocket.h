@@ -17,6 +17,9 @@ namespace EventPie{
         public:
             TCPSocket();
             TCPSocket(int sock);
+            TCPSocket(
+                const char *host, int port,
+                std::function<void(int)> callback);
             virtual ~TCPSocket();
             
             void onReceive(std::function<void(void*,int)> callback);
@@ -28,8 +31,10 @@ namespace EventPie{
             void setNodelay(bool nodelay);
             
         protected:
+            bool open(const char *host, int port);
+            void openAsync(const char *host, int port);
+            
             void receive();
-            void unbind();
             
         protected:
             int sock;
@@ -37,6 +42,7 @@ namespace EventPie{
             
             std::function<void(void*,int)> receiveCallback;
             std::function<void()> unbindCallback;
+            std::function<void(int)> connectedCallback;
         };
     };
 };

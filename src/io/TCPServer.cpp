@@ -33,43 +33,58 @@ namespace EventPie{
         }
         TCPServer::TCPServer(
             int _port,
-            function<void(TCPSocket *)> _callback) :
+            function<void(int, TCPSocket *)> _callback) :
             port(_port), sock(0),
             acceptCallback(_callback){
             
             data = new TCPServerData();
                 
-            open();
             runAsync();
         }
         TCPServer::~TCPServer(){
             delete data;
         }
         
-        bool TCPServer::open(){
+        bool TCPServer::open(int port){
             sockaddr_in addr;
             
             sock = ::socket( PF_INET, SOCK_STREAM, 0 );
-            if( sock == 0 )
+            if( sock == 0 ){
+                EP_SAFE_DEFER( acceptCallback, eSocketError, nullptr );
                 return false;
+            }
             
             memset( &addr, 0, sizeof(addr) );
             addr.sin_family=AF_INET;
             addr.sin_addr.s_addr = htonl( INADDR_ANY );
             addr.sin_port = htons( port );
             
+            /* setopt - reuse address */
+            int opt = 1;
+            setsockopt(
+                sock,
+                SOL_SOCKET, SO_REUSEADDR,
+                &opt, sizeof(opt) );
+            
             /* bind */
-            if( ::bind( sock, (sockaddr*)&addr, sizeof(addr) ) == -1 )
+            if( ::bind( sock, (sockaddr*)&addr, sizeof(addr) ) == -1 ){
+                EP_SAFE_DEFER( acceptCallback, eBindingError, nullptr );
                 return false;
+            }
             
             /* listen */
-            if( ::listen( sock, 5 ) == -1 )
+            if( ::listen( sock, cfgBacklogSize ) == -1 ){
+                EP_SAFE_DEFER( acceptCallback, eListeningError, nullptr );
                 return false;
+            }
             
             return true;
         }
         void TCPServer::run(){
             struct kevent event;
+            
+            if( open( port ) == false )
+                return;
             
             data->kq = kqueue();
             
@@ -81,7 +96,7 @@ namespace EventPie{
             
             while( true ){
                 struct kevent events[1024];
-                struct timespec timeout={5,0};
+                struct timespec timeout={0,0};
                 
                 int nEvents = kevent( data->kq, 0,0, events, 1024, &timeout );
                 
@@ -91,7 +106,7 @@ namespace EventPie{
                     if( ev.ident == sock ){
                         TCPSocket *client = accept();
                         
-                        EP_SAFE_DEFER( acceptCallback, client );
+                        EP_SAFE_DEFER( acceptCallback, eNoError, client );
                     }
                     else{
                         TCPSocket *client = (TCPSocket *)ev.udata;
@@ -104,7 +119,7 @@ namespace EventPie{
         }
         void TCPServer::runAsync(){
             thread(
-                bind( &TCPServer::run, this ) ).detach();
+                std::bind( &TCPServer::run, this ) ).detach();
         }
         
         TCPSocket *TCPServer::accept(){

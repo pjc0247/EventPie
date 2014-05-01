@@ -6,7 +6,7 @@ pie event pie event pie
 
 EventPie는 C++로 작성된 node-js스타일의 이벤트 드리븐 구현체입니다.
 
-Sample
+Sample EchoServer
 ----
 ```C++
 

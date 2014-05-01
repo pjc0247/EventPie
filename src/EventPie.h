@@ -1,10 +1,13 @@
 #ifndef _EVENT_PIE_H
 #define _EVENT_PIE_H
 
+#include "Config.h"
+
 #include "Timer.h"
 #include "Task.h"
 
 #include "Util.h"
+#include "Error.h"
 
 namespace EventPie{
     

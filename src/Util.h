@@ -20,4 +20,14 @@
             std::bind(f,__VA_ARGS__) );\
     }}while(0)
 
+#define EP_SAFE_ASYNC_0(f) do{\
+    if( f != nullptr ){\
+        EventPie::deferAsync( f );\
+    }}while(0)
+#define EP_SAFE_ASYNC(f) do{\
+    if( f != nullptr ){\
+        EventPie::deferAsync(\
+            std::bind(f,__VA_ARGS__) );\
+    }}while(0)
+
 #endif //_UTIL_H

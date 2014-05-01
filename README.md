@@ -11,23 +11,35 @@ Sample
 ```C++
 
 using namespace EventPie;
+using namespace EventPie::Io;
 
 int main(){
-  int serverSocket;
-  
-  /* setup */
-  
-  Socket::accept( serverSocket,
-    [](int clientSocket, sockaddr addr, socklen_t addrLen){
-      printf("new connection\n");
-      
-      Socket::recv( clientSocket, BUFSIZE, 0, 
-        [clientSocket](void *data,int len){
-          printf("data received\n");
-      });
-  });
-  
-  run();  
+    TCPServer *server;
+    
+    server = new TCPServer( 9916,
+        [&server](int err, TCPSocket *client){
+            
+            if( err == eNoError ){
+                printf("new connection\n");
+                
+                client->onReceive(
+                    [client](void *data, int len){
+                        printf("data received : %s\n", data);
+                        
+                        /* echo back */
+                        client->write( data, len );
+                    } );
+                client->onUnbind(
+                    [client](){
+                        printf("client disconnected\n");
+                    } );
+            }
+            else{
+                printf("cannot create tcp server - %d\n", err);
+            }
+        } );
+        
+    run();  
 }
 ```
 
@@ -43,7 +55,7 @@ using namespace EventPie;
 
 int main(){
   int life = 3;
-  Timer *timer = new Timer( [counter](){
+  Timer *timer = new Timer( [life](){
     printf("0.15초마다 실행되는 타이머\n");
     
     life --;

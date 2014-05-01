@@ -1,7 +1,5 @@
 #include "EventPie.h"
 
-#include "Reaction.h"
-#include "Timer.h"
 #include "ThreadPool.h"
 
 #include <queue>
@@ -19,7 +17,7 @@ namespace EventPie{
     
     static mutex taskQueueMutex;
     
-    static ThreadPool threadPool;
+    static ThreadPool threadPool( cfgThreadPoolSize );
     
     static bool running;
     

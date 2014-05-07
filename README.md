@@ -73,14 +73,14 @@ __Task__
 
 
 
-addTask함수를 사용하여 태스크을 뒤로 미룰 수 있습니다.
+defer함수를 사용하여 태스크을 뒤로 미룰 수 있습니다.
 
-( addTask함수는 node-js의 nextTick과 같은 역할을 합니다. )
+( defer함수는 node-js의 nextTick과 같은 역할을 합니다. )
 ```C++
 using namespace EventPie;
 
 int main(){
-  addTask( [](){
+  defer( [](){
     printf("task\n");
   });
   
@@ -88,7 +88,7 @@ int main(){
 }
 ```
 
-defer함수를 사용하여 태스크를 비동기적으로 수행할 수 있습니다.
+deferAsync함수를 사용하여 태스크를 비동기적으로 수행할 수 있습니다.
 
 태스크는 EventPie내부의 ThreadPool에서 수행됩니다.
 
@@ -99,13 +99,13 @@ using namespace EventPie;
 int main(){
 
   /* very slow task */
-  defer( [](){
+  deferAsync( [](){
     int result = 0;
     
     sleep(1000);
     result = 1234;
     
-    addTask( [result](){
+    defer( [result](){
       printf("task completed %d\n", result);
     });
   });

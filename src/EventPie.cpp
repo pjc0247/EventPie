@@ -1,6 +1,8 @@
 #include "EventPie.h"
 
 #include "ThreadPool.h"
+#include "Ev/Ev.h"
+#include "Io/Interface.h"
 
 #include <queue>
 #include <vector>
@@ -9,6 +11,7 @@
 
 using namespace std;
 using namespace std::chrono;
+using namespace EventPie::Config;
 
 namespace EventPie{
     
@@ -17,10 +20,29 @@ namespace EventPie{
     
     static mutex taskQueueMutex;
     
-    static ThreadPool threadPool( cfgThreadPoolSize );
+    static ThreadPool threadPool( threadPoolSize );
     
     static bool running;
     
+    void processEvents(){
+        Ev::Event *events;
+
+        int nEvents = Ev::poll( &events );
+        for(int i=0;i<nEvents;i++){
+            Io::Interface *interface =
+                (Io::Interface*)events[i].userData;
+            
+            /* invoke io callback */
+            switch( events[i].filter ){
+                case Ev::eRead:
+                    interface->onRead();
+                    break;
+                case Ev::eWrite:
+                    interface->onWritten();
+                    break;
+            }
+        }
+    }
     void processTasks(){
         /* process task queue */
         unique_lock<mutex> lock( taskQueueMutex );
@@ -40,11 +62,19 @@ namespace EventPie{
     }
     
     int run(){
+        if( Ev::initialize() == false )
+            return eEvInitializeError;
+        
         running = true;
         
         auto timePoint = system_clock::now();
         
         while( running ){
+            /* poll ev */
+            processEvents();
+            if( !running ) break;
+            
+            /* process tasks */
             processTasks();
             if( !running ) break;
             
@@ -58,6 +88,9 @@ namespace EventPie{
                 processTimers( (int)loopTime );
             }
         }
+        
+        Ev::quit();
+        
         return 0;
     }
     void stop(){

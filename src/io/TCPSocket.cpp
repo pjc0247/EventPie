@@ -15,24 +15,23 @@
 #include <thread>
 
 using namespace std;
+using namespace EventPie::Config;
 
 namespace EventPie{
     namespace Io{
         
         TCPSocket::TCPSocket() :
-            sock(0),
             receiveCallback(nullptr), unbindCallback(nullptr){
             
         }
         TCPSocket::TCPSocket(int _sock) :
-            sock(_sock),
+            Interface(_sock),
             receiveCallback(nullptr), unbindCallback(nullptr){
             
         }
         TCPSocket::TCPSocket(
             const char *host, int port,
-            std::function<void(int)> callback) :
-            sock(0),
+            std::function<void(int, TCPSocket*)> callback) :
             connectedCallback(callback),
             receiveCallback(nullptr), unbindCallback(nullptr){
             
@@ -40,6 +39,23 @@ namespace EventPie{
         }
         TCPSocket::~TCPSocket(){
             
+        }
+        
+        void TCPSocket::onRead(){
+            int len = read( fd, inbuf,InbufSize );
+            
+            if( len == 0 ){
+                Ev::unwatch( fd, Ev::eRead );
+                
+                EP_SAFE_CALL_0( unbindCallback );
+            }
+            else{
+                inbuf[ len ] = 0;
+                
+                EP_SAFE_CALL( receiveCallback, inbuf,len );
+            }
+        }
+        void TCPSocket::onWritten(){
         }
         
         void TCPSocket::onReceive(function<void(void*,int)> callback){
@@ -50,16 +66,18 @@ namespace EventPie{
         }
         
         void TCPSocket::write(void *data,int len){
-            ::write( sock, data, len );
+            ::write( fd, data, len );
         }
         void TCPSocket::close(){
-            ::close( sock );
+            Ev::unwatch( fd, Ev::eRead );
+            
+            ::close( fd );
         }
         
         void TCPSocket::setNodelay(bool nodelay){
             int opt = nodelay;
             setsockopt(
-                sock,
+                fd,
                 IPPROTO_TCP, TCP_NODELAY,
                 &opt, sizeof(opt));
         }
@@ -68,15 +86,17 @@ namespace EventPie{
             hostent *hostInfo;
             sockaddr_in addr;
             
-            sock = ::socket( PF_INET, SOCK_STREAM, 0 );
-            if( sock == 0 ){
-                EP_SAFE_DEFER( connectedCallback, eSocketError );
+            /* create socket */
+            fd = ::socket( PF_INET, SOCK_STREAM, 0 );
+            if( fd == 0 ){
+                EP_SAFE_DEFER( connectedCallback, eSocketError, this );
                 return false;
             }
             
+            /* query host address */
             hostInfo = gethostbyname( host );
             if( hostInfo == nullptr ){
-                EP_SAFE_DEFER( connectedCallback, eHostError );
+                EP_SAFE_DEFER( connectedCallback, eHostError, this );
                 return false;
             }
             
@@ -85,12 +105,15 @@ namespace EventPie{
             addr.sin_addr.s_addr = *(in_addr_t*)hostInfo->h_addr_list[0];
             addr.sin_port = htons( port );
             
-            if( connect( sock, (sockaddr*)&addr, sizeof(addr) ) == -1 ){
-                EP_SAFE_DEFER( connectedCallback, eConnectionError );
+            /* connect to host */
+            if( connect( fd, (sockaddr*)&addr, sizeof(addr) ) == -1 ){
+                EP_SAFE_DEFER( connectedCallback, eConnectionError, this );
                 return false;
             }
             
-            EP_SAFE_DEFER( connectedCallback, eNoError );
+            Ev::watch( fd, Ev::eRead, this );
+            
+            EP_SAFE_DEFER( connectedCallback, eNoError, this );
             return true;
         }
         void TCPSocket::openAsync(const char *host, int port){
@@ -98,19 +121,6 @@ namespace EventPie{
                 [this, host, port](){
                     open( host, port );
                 });
-        }
-        
-        void TCPSocket::receive(){
-            int len = read( sock, inbuf,InbufSize );
-            
-            if( len == 0 ){
-                EP_SAFE_DEFER_0( unbindCallback );
-            }
-            else{
-                inbuf[ len ] = 0;
-                
-                EP_SAFE_DEFER( receiveCallback, inbuf,len );
-            }
         }
     };
 };

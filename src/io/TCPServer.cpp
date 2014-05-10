@@ -14,42 +14,52 @@
 #include <thread>
 
 using namespace std;
+using namespace EventPie::Config;
 
 namespace EventPie{
     namespace Io{
-        
-        struct TCPServerData{
-            int kq;
-            
-            TCPServerData(){
-                kq = 0;
-            }
-        };
       
         TCPServer::TCPServer() :
-            port(0), sock(0),
+            port(0),
             acceptCallback(nullptr){
                 
         }
         TCPServer::TCPServer(
             int _port,
             function<void(int, TCPSocket *)> _callback) :
-            port(_port), sock(0),
+            port(_port),
             acceptCallback(_callback){
             
-            data = new TCPServerData();
-                
-            runAsync();
+            openAsync( port );
         }
         TCPServer::~TCPServer(){
-            delete data;
+        }
+        
+        void TCPServer::onRead(){
+            TCPSocket *tcp;
+            struct kevent event;
+            
+            sockaddr addr;
+            socklen_t addrLen;
+            int client;
+            
+            client = ::accept( fd, &addr, &addrLen );
+            tcp = new TCPSocket( client );
+            
+            Ev::watch( client, Ev::eRead, tcp );
+            
+            EP_SAFE_CALL( acceptCallback, eNoError, tcp );
+        }
+        void TCPServer::onWritten(){
+            
         }
         
         bool TCPServer::open(int port){
             sockaddr_in addr;
             
-            sock = ::socket( PF_INET, SOCK_STREAM, 0 );
-            if( sock == 0 ){
+            /* create socket */
+            fd = ::socket( PF_INET, SOCK_STREAM, 0 );
+            if( fd == 0 ){
                 EP_SAFE_DEFER( acceptCallback, eSocketError, nullptr );
                 return false;
             }
@@ -62,86 +72,31 @@ namespace EventPie{
             /* setopt - reuse address */
             int opt = 1;
             setsockopt(
-                sock,
+                fd,
                 SOL_SOCKET, SO_REUSEADDR,
                 &opt, sizeof(opt) );
             
             /* bind */
-            if( ::bind( sock, (sockaddr*)&addr, sizeof(addr) ) == -1 ){
+            if( ::bind( fd, (sockaddr*)&addr, sizeof(addr) ) == -1 ){
                 EP_SAFE_DEFER( acceptCallback, eBindingError, nullptr );
                 return false;
             }
             
             /* listen */
-            if( ::listen( sock, cfgBacklogSize ) == -1 ){
+            if( ::listen( fd, backlogSize ) == -1 ){
                 EP_SAFE_DEFER( acceptCallback, eListeningError, nullptr );
                 return false;
             }
             
+            Ev::watch( fd, Ev::eRead, this );
+            
             return true;
         }
-        void TCPServer::run(){
-            struct kevent event;
-            
-            if( open( port ) == false )
-                return;
-            
-            data->kq = kqueue();
-            
-            EV_SET(
-                &event, sock,
-                EVFILT_READ, EV_ADD | EV_ENABLE,
-                0,0,0 );
-            kevent( data->kq, &event, 1, 0,0,0 );
-            
-            while( true ){
-                struct kevent events[1024];
-                struct timespec timeout={0,0};
-                
-                int nEvents = kevent( data->kq, 0,0, events, 1024, &timeout );
-                
-                for(int i=0;i<nEvents;i++){
-                    struct kevent &ev = events[i];
-                    
-                    if( ev.ident == sock ){
-                        TCPSocket *client = accept();
-                        
-                        EP_SAFE_DEFER( acceptCallback, eNoError, client );
-                    }
-                    else{
-                        TCPSocket *client = (TCPSocket *)ev.udata;
-                        
-                        client->receive();
-                    }
-                }
-            }
-            
+        void TCPServer::openAsync(int port){
+            deferAsync(
+                [this, port](){
+                    open( port );
+                });
         }
-        void TCPServer::runAsync(){
-            thread(
-                std::bind( &TCPServer::run, this ) ).detach();
-        }
-        
-        TCPSocket *TCPServer::accept(){
-            TCPSocket *tcp;
-            struct kevent event;
-            
-            sockaddr addr;
-            socklen_t addrLen;
-            int client;
-            
-            client = ::accept( sock, &addr, &addrLen );
-            
-            tcp = new TCPSocket( client );
-            
-            EV_SET(
-                &event, client,
-                EVFILT_READ, EV_ADD,
-                0,0, tcp );
-            kevent( data->kq, &event, 1, 0,0,0 );
-            
-            return tcp;
-        }
-        
     };
 };

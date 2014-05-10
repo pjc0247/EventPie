@@ -10,6 +10,8 @@ namespace EventPie{
         /* std error */
         eAllocError = 1000,
         
+        eParseError = 1100,
+        
         /* network error */
         eSocketError = 2000,
         eHostError,
@@ -17,6 +19,9 @@ namespace EventPie{
         eConnectionError,
         eBindingError,
         eListeningError,
+        
+        /* ev error */
+        eEvInitializeError = 3000,
         
         /* unknown error */
         eUnknownError=9000

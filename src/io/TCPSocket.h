@@ -1,5 +1,7 @@
-#ifndef _TCP_SOCKET_H
-#define _TCP_SOCKET_H
+#ifndef _IO_TCP_SOCKET_H
+#define _IO_TCP_SOCKET_H
+
+#include "Interface.h"
 
 #include <functional>
 
@@ -8,7 +10,7 @@ namespace EventPie{
         
         class TCPServer;
         
-        class TCPSocket{
+        class TCPSocket : Interface{
             friend TCPServer;
             
         public:
@@ -19,8 +21,11 @@ namespace EventPie{
             TCPSocket(int sock);
             TCPSocket(
                 const char *host, int port,
-                std::function<void(int)> callback);
+                std::function<void(int, TCPSocket *socket)> callback);
             virtual ~TCPSocket();
+            
+            virtual void onRead();
+            virtual void onWritten();
             
             void onReceive(std::function<void(void*,int)> callback);
             void onUnbind(std::function<void()> callback);
@@ -34,17 +39,14 @@ namespace EventPie{
             bool open(const char *host, int port);
             void openAsync(const char *host, int port);
             
-            void receive();
-            
         protected:
-            int sock;
-            char inbuf[InbufSize];
+            char inbuf[InbufSize+1];
             
             std::function<void(void*,int)> receiveCallback;
             std::function<void()> unbindCallback;
-            std::function<void(int)> connectedCallback;
+            std::function<void(int, TCPSocket *socket)> connectedCallback;
         };
     };
 };
 
-#endif //_TCP_SOCKET_H
+#endif //_IO_TCP_SOCKET_H

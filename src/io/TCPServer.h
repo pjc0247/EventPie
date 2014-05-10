@@ -1,5 +1,7 @@
-#ifndef _TCP_SERVER_H
-#define _TCP_SERVER_H
+#ifndef _IO_TCP_SERVER_H
+#define _IO_TCP_SERVER_H
+
+#include "Interface.h"
 
 #include <functional>
 
@@ -7,32 +9,27 @@ namespace EventPie{
     namespace Io{
         
         class TCPSocket;
-        struct TCPServerData;
         
-        class TCPServer{
+        class TCPServer : Interface{
         public:
             TCPServer();
             TCPServer(
                 int port,
-                std::function<void(TCPSocket *)> callback);
+                std::function<void(int, TCPSocket *)> callback);
             virtual ~TCPServer();
             
         protected:
-            bool open();
-            void run();
-            void runAsync();
+            virtual void onRead();
+            virtual void onWritten();
             
-            TCPSocket *accept();
+            bool open(int port);
+            void openAsync(int port);
             
         protected:
             int port;
-            std::function<void(TCPSocket *)> acceptCallback;
-            
-            int sock;
-            
-            TCPServerData *data;
+            std::function<void(int, TCPSocket *)> acceptCallback;
         };
     };
 };
 
-#endif //_TCP_SERVER_H
+#endif //_IO_TCP_SERVER_H

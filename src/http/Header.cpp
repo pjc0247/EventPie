@@ -31,6 +31,12 @@ namespace EventPie{
         string Header::dump() const{
             string header;
             
+            for( auto &pair : fields ){
+                header += pair.first + ":" + pair.second;
+                header += "\r\n";
+            }
+            header += "\r\n";
+            
             return header;
         }
     };

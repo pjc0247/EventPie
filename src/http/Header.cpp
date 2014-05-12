@@ -27,14 +27,15 @@ namespace EventPie{
                 return it->second;
         }
         
-        void Header::load(const string &header){
+        int Header::load(const string &header){
             int offset = 0;
             for(int i=0;i<header.size()-1;i++){
                 
                 /* check CrLf */
                 if( EP_STRCMP2( &header[i], '\r','\n' ) ){
                     
-                    /* parse field */
+                    /* parse field
+                     *   name : value */
                     if( i != offset ){ /* for ignore empty field */
                         int ws1 = 0, ws2 = 0;
                         int delim = -1;
@@ -54,14 +55,16 @@ namespace EventPie{
                                 delim = j;
                         }
                     }
+                    
                     offset = i+2;
                 }
                 /* check double-CrLf */
                 if( i+3 < header.size() &&
                     EP_STRCMP4( &header[i], '\r','\n','\r','\n' ) ){
-                    break;
+                    return i+4;
                 }
             }
+            return -1;
         }
         string Header::dump() const{
             string header;

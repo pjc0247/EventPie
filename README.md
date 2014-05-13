@@ -113,8 +113,3 @@ int main(){
   run();
 }
 ```
-
-Comment
-----
-
-IO/Socket의 구현체는 단순 시연을 위해 blocking 함수를 강제적으로 non-blocking으로 변환한 것들입니다.

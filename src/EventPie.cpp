@@ -13,11 +13,13 @@ using namespace std;
 using namespace std::chrono;
 using namespace EventPie::Config;
 
-#define OUT_Q tasks[taskQueueSwitch]
-#define IN_Q tasks[1-taskQueueSwitch]
-#define OUT_LOCK taskQueueMutex[taskQueueSwitch]
-#define IN_LOCK taskQueueMutex[1-taskQueueSwitch]
+/*
+#define OUT_Q tasks[taskQueueSwitch.load()]
+#define IN_Q tasks[1-taskQueueSwitch.load()]
+#define OUT_LOCK taskQueueMutex[taskQueueSwitch.load()]
+#define IN_LOCK taskQueueMutex[1-taskQueueSwitch.load()]
 #define SWITCH_Q taskQueueSwitch ^= 1;
+*/
 
 namespace EventPie{
     
@@ -26,10 +28,14 @@ namespace EventPie{
     static int taskQueueSwitch = 0;
     
     static mutex taskQueueMutex[2];
-    
+   
     static ThreadPool threadPool( threadPoolSize );
     
     static bool running;
+    
+    int pd = 0;
+    
+    int getPd(){ return pd; };
     
     void processEvents(){
         Ev::Event *events;
@@ -52,10 +58,14 @@ namespace EventPie{
     }
     void processTasks(){
         /* process task queue */
-        unique_lock<mutex> lock( OUT_LOCK );
-        while( !OUT_Q.empty() ){
-            Task task = OUT_Q.front();
-            OUT_Q.pop();
+        std::atomic_thread_fence( std::memory_order_acquire );
+        int idx = taskQueueSwitch;
+        
+        unique_lock<mutex> lock( taskQueueMutex[idx] );
+        
+        while( !tasks[idx].empty() ){
+            Task task = tasks[idx].front();
+            tasks[idx].pop();
                 task();
         }
         lock.unlock();
@@ -95,7 +105,8 @@ namespace EventPie{
                 processTimers( (int)loopTime );
             }
             
-            SWITCH_Q;
+            taskQueueSwitch ^= 1;
+            std::atomic_thread_fence( std::memory_order_release );
         }
         
         Ev::quit();
@@ -121,8 +132,11 @@ namespace EventPie{
     }
     
     void defer(Task task){
-        unique_lock<mutex> lock( IN_LOCK );
-            IN_Q.push( task );
+        std::atomic_thread_fence( std::memory_order_acquire );
+        int idx = taskQueueSwitch;
+        
+        unique_lock<mutex> lock( taskQueueMutex[idx] );
+            tasks[idx].push( task );
         lock.unlock();
     }
     

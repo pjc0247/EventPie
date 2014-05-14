@@ -14,7 +14,7 @@
 namespace EventPie{
     
     int run();
-    void stop();
+    void quit();
     
     void addTimer(Timer *timer);
     void removeTimer(Timer *timer);

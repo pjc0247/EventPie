@@ -13,12 +13,19 @@ using namespace std;
 using namespace std::chrono;
 using namespace EventPie::Config;
 
+#define OUT_Q tasks[taskQueueSwitch]
+#define IN_Q tasks[1-taskQueueSwitch]
+#define OUT_LOCK taskQueueMutex[taskQueueSwitch]
+#define IN_LOCK taskQueueMutex[1-taskQueueSwitch]
+#define SWITCH_Q taskQueueSwitch ^= 1;
+
 namespace EventPie{
     
     static vector<Timer*> timers;
-    static queue<Task> tasks;
+    static queue<Task> tasks[2];
+    static int taskQueueSwitch = 0;
     
-    static mutex taskQueueMutex;
+    static mutex taskQueueMutex[2];
     
     static ThreadPool threadPool( threadPoolSize );
     
@@ -45,14 +52,13 @@ namespace EventPie{
     }
     void processTasks(){
         /* process task queue */
-        unique_lock<mutex> lock( taskQueueMutex );
-        while( !tasks.empty() ){
-            Task task = tasks.front();
-            tasks.pop();
+        unique_lock<mutex> lock( OUT_LOCK );
+        while( !OUT_Q.empty() ){
+            Task task = OUT_Q.front();
+            OUT_Q.pop();
                 task();
         }
         lock.unlock();
-
     }
     void processTimers(int dt){
         /* process timers */
@@ -68,6 +74,7 @@ namespace EventPie{
         running = true;
         
         auto timePoint = system_clock::now();
+        int loopCount = 0;
         
         while( running ){
             /* poll ev */
@@ -87,6 +94,8 @@ namespace EventPie{
             
                 processTimers( (int)loopTime );
             }
+            
+            SWITCH_Q;
         }
         
         Ev::quit();
@@ -112,8 +121,9 @@ namespace EventPie{
     }
     
     void defer(Task task){
-        unique_lock<mutex> lock( taskQueueMutex );
-            tasks.push( task );
+        unique_lock<mutex> lock( IN_LOCK );
+            IN_Q.push( task );
+        lock.unlock();
     }
     
     void deferAsync(Task task){

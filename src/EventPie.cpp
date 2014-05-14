@@ -102,7 +102,7 @@ namespace EventPie{
         
         return 0;
     }
-    void stop(){
+    void quit(){
         running = false;
     }
     

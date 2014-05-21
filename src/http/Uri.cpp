@@ -22,7 +22,7 @@ namespace EventPie{
         Uri::Uri(){
             
         }
-        Uri::Uri(const char *_uri) :
+        Uri::Uri(const string &_uri) :
             uri(_uri), port(80){
             
             parse();
@@ -31,16 +31,16 @@ namespace EventPie{
             
         }
         
-        const string &Uri::getProtocol(){
+        const string &Uri::getProtocol() const{
             return protocol;
         }
-        const string &Uri::getDomain(){
+        const string &Uri::getDomain() const{
             return domain;
         }
-        const string &Uri::getRequestUri(){
+        const string &Uri::getRequestUri() const{
             return requestUri;
         }
-        int Uri::getPort(){
+        int Uri::getPort() const{
             return port;
         }
         

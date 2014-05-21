@@ -4,22 +4,41 @@
 
 using namespace std;
 
+#define MAKE_LOWER(src,dst) do{\
+    dst.assign( src );\
+    transform(\
+          src.begin(), src.end(), dst.begin(),\
+          (int(*)(int))tolower );\
+    }while(0)
+
 namespace EventPie{
     namespace Http{
       
         Header::Header(){
             
         }
+        Header::Header(const string &header){
+            load( header );
+        }
         Header::~Header(){
             
         }
         
         void Header::setField(const string &name, const string &value){
-            fields[name] = value;
+            string lowerName;
+            
+            MAKE_LOWER( name, lowerName );
+            printf("|%s|\n", lowerName.c_str());
+            
+            fields[lowerName] = value;
         }
         const string &Header::getField(const string &name) const{
             static string noValue = "";
-            auto it = fields.find( name );
+            string lowerName;
+            
+            MAKE_LOWER( name, lowerName );
+            
+            auto it = fields.find( lowerName );
             
             if( it == fields.end() )
                 return noValue;
@@ -48,7 +67,7 @@ namespace EventPie{
                             else if( delim > 0 ){
                                 setField(
                                     header.substr( offset, delim-offset-ws1 ),
-                                    header.substr( offset+ws2+1, i-(delim+ws2+1) ) );
+                                    header.substr( delim+ws2+1, i-(delim+ws2+1) ) );
                                 break;
                             }
                             else if( header[j] == ':' )

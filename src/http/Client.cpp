@@ -43,26 +43,53 @@ namespace EventPie{
         Client::Client(){
             
         }
-        Client::Client(const string &_uri, ResponseCallback _callback) :
-            uri(_uri),
-            responseCallback(_callback){
-            
-            //requestAsync();
-        }
-        Client::Client(Uri _uri, ResponseCallback _callback) :
+        
+        /* request with uri */
+        Client::Client(
+            Uri _uri,
+            ResponseCallback _callback) :
             uri(_uri),
             responseCallback(_callback){
                 
             requestAsync(
                 eGet, uri );
         }
+        /* request with method and uri */
+        Client::Client(
+            Method method, Uri _uri,
+            ResponseCallback _callback) :
+            uri(_uri),
+            responseCallback(_callback){
+            
+            requestAsync(
+                method, uri );
+        }
+        /* request with method, uri and header */
+        Client::Client(
+            Method method, Uri _uri,
+            Header header,
+            ResponseCallback _callback) :
+            uri(_uri),
+            responseCallback(_callback){
+            
+            requestAsync(
+                method, uri, header );
+        }
+        /* request with method, uri, header and data */
+        Client::Client(
+            Method method, Uri _uri,
+            Header header,
+            void *data, int len,
+            ResponseCallback _callback) :
+            uri(_uri),
+            responseCallback(_callback){
+            
+            requestAsync(
+                method, uri, header,
+                data, len );
+        }
         Client::~Client(){
             
-        }
-        
-        void Client::open(const std::string &host, int port){
-            
-                
         }
         
         void Client::request(
@@ -76,7 +103,16 @@ namespace EventPie{
                 "Connection", "Closed" );
             header.setField(
                 "Accept", "*/*" );
-
+            
+            /* content-length */
+            if( len > 0 ){
+                char lenString[16];
+                sprintf( lenString, "%d", len );
+                
+                header.setField(
+                    "Content-Length", lenString );
+            }
+            
             request(
                 method, uri,
                 header,
@@ -109,6 +145,8 @@ namespace EventPie{
                                 /*
                                  todo : parse chunked content-length
                                  */
+                                header.getField(
+                                    "Transfer-Encoding");
                                 
                                 if( offset == - 1 ){
                                     EP_SAFE_DEFER( responseCallback, eParseError, Header(),"" );
@@ -116,8 +154,6 @@ namespace EventPie{
                                 else{
                                     body = buffer->substr( offset );
                                     
-                                    header.load( *buffer );
-                                
                                     EP_SAFE_DEFER( responseCallback, eNoError, header, body );
                                 }
                                 
@@ -133,6 +169,10 @@ namespace EventPie{
                             (void*)requestLine.c_str(), requestLine.size());
                         socket->write(
                             (void*)headerString.c_str(), headerString.size());
+                        
+                        if( len > 0 ){
+                            socket->write( data, len );
+                        }
                     }
                 });
         }
@@ -153,9 +193,9 @@ namespace EventPie{
             void *data, int len){
             
             deferAsync(
-                [this](){
+                [this, method,uri,header,data,len](){
                     
-                   // request( header );
+                    request( method, uri, header, data, len );
                 });
         }
     };

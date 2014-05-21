@@ -114,7 +114,7 @@ namespace EventPie{
                                     EP_SAFE_DEFER( responseCallback, eParseError, Header(),"" );
                                 }
                                 else{
-                                    body = buffer->substr( offset+4 );
+                                    body = buffer->substr( offset );
                                     
                                     header.load( *buffer );
                                 

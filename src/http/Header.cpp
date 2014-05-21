@@ -28,7 +28,6 @@ namespace EventPie{
             string lowerName;
             
             MAKE_LOWER( name, lowerName );
-            printf("|%s|\n", lowerName.c_str());
             
             fields[lowerName] = value;
         }

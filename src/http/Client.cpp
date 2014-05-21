@@ -3,69 +3,120 @@
 #include "../EventPie.h"
 #include "../io/TCPSocket.h"
 
+#include "Protocol.h"
+#include "Header.h"
+
 using namespace std;
 using namespace EventPie::Io;
 
 namespace EventPie{
     namespace Http{
-    
-        int offsetOfDelim(const std::string &buffer){
-            for(int i=0;i<buffer.size()-3;i++){
-                if( buffer[i+0] == '\r' &&
-                    buffer[i+1] == '\n' &&
-                    buffer[i+2] == '\r' &&
-                    buffer[i+3] == '\n' ){
-                    
-                    return i;
-                }
+        
+        string generateRequestLine(
+            Method method, const string &requestUri, const string &version){
+            
+            string requestLine;
+            
+            /* method */
+            switch( method ){
+                case eGet:
+                    requestLine = "GET ";
+                    break;
+                case ePost:
+                    requestLine = "POST ";
+                    break;
             }
-            return -1;
+            
+            /* request uri */
+            requestLine += requestUri;
+            requestLine += " ";
+            
+            /* http version */
+            requestLine += version;
+            
+            /* crlf */
+            requestLine += "\r\n";
+            
+            return requestLine;
         }
         
         Client::Client(){
             
         }
-        Client::Client(const char *_uri, ResponseCallback _callback) :
+        Client::Client(const string &_uri, ResponseCallback _callback) :
             uri(_uri),
             responseCallback(_callback){
             
-            openAsync();
+            //requestAsync();
         }
-        Client::Client(Uri &_uri, ResponseCallback _callback) :
+        Client::Client(Uri _uri, ResponseCallback _callback) :
             uri(_uri),
             responseCallback(_callback){
                 
-            openAsync();
+            requestAsync(
+                eGet, uri );
         }
         Client::~Client(){
             
         }
         
-        void Client::open(){
+        void Client::open(const std::string &host, int port){
+            
+                
+        }
+        
+        void Client::request(
+            Method method, Uri uri,
+            void *data, int len){
+            
+            Header header;
+            header.setField(
+                "Host", uri.getDomain() );
+            header.setField(
+                "Connection", "Closed" );
+            header.setField(
+                "Accept", "*/*" );
+
+            request(
+                method, uri,
+                header,
+                data, len );
+        }
+        void Client::request(
+            Method method, Uri uri,
+            Header header,
+            void *data, int len){
+            
             TCPSocket *socket = new TCPSocket(
                 uri.getDomain().c_str(), uri.getPort(),
-                [this](int err, TCPSocket *socket){
+                [=](int err, TCPSocket *socket){
                     if( err != eNoError ){
-                        EP_SAFE_DEFER( responseCallback, err, "","" );
+                        EP_SAFE_DEFER( responseCallback, err, Header(),"" );
                     }
                     else{
                         string *buffer = new string();
                         
                         socket->onReceive(
-                            [this, socket, buffer](void *data, int len){
+                            [=](void *data, int len){
                                 buffer->append( (char*)data );
                             });
                         socket->onUnbind(
-                            [this, socket, buffer](){
-                                string header, body;
-                                int offset = offsetOfDelim(*buffer);
+                            [=](){
+                                Header header;
+                                string body;
+                                int offset = header.load( *buffer );
+                                
+                                /*
+                                 todo : parse chunked content-length
+                                 */
                                 
                                 if( offset == - 1 ){
-                                    EP_SAFE_DEFER( responseCallback, eParseError, "","" );
+                                    EP_SAFE_DEFER( responseCallback, eParseError, Header(),"" );
                                 }
                                 else{
-                                    header = buffer->substr( 0, offset );
-                                    body = buffer->substr( offset+2 );
+                                    body = buffer->substr( offset+4 );
+                                    
+                                    header.load( *buffer );
                                 
                                     EP_SAFE_DEFER( responseCallback, eNoError, header, body );
                                 }
@@ -73,20 +124,38 @@ namespace EventPie{
                                 delete buffer;
                             });
                         
-                        string header =
-                            "GET / HTTP/1.1\r\n"
-                            "Accept : */*\r\n"
-                            "Connection : Close\r\n\r\n";
+                        string requestLine =
+                            generateRequestLine( method, uri.getRequestUri(), "HTTP/1.1" );
+                        string headerString =
+                            header.dump();
                         
                         socket->write(
-                            (void*)header.c_str(), header.size());
+                            (void*)requestLine.c_str(), requestLine.size());
+                        socket->write(
+                            (void*)headerString.c_str(), headerString.size());
                     }
                 });
         }
-        void Client::openAsync(){
+        void Client::requestAsync(
+            Method method, Uri uri,
+            void *data, int len){
+            
+            deferAsync(
+                [this, method,uri,data,len](){
+                    Header header;
+                    
+                    request( method, uri, data, len );
+                });
+        }
+        void Client::requestAsync(
+            Method method, Uri uri,
+            Header header,
+            void *data, int len){
+            
             deferAsync(
                 [this](){
-                    open();
+                    
+                   // request( header );
                 });
         }
     };

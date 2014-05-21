@@ -17,13 +17,13 @@ namespace EventPie{
         class Uri{
         public:
             Uri();
-            Uri(const char *uri);
+            Uri(const std::string &uri);
             virtual ~Uri();
             
-            const std::string &getProtocol();
-            const std::string &getDomain();
-            const std::string &getRequestUri();
-            int getPort();
+            const std::string &getProtocol() const;
+            const std::string &getDomain() const;
+            const std::string &getRequestUri() const;
+            int getPort() const;
             
         protected:
             void parse();

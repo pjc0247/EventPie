@@ -37,7 +37,6 @@ namespace EventPie{
         
         void TCPServer::onRead(){
             TCPSocket *tcp;
-            struct kevent event;
             
             sockaddr addr;
             socklen_t addrLen;

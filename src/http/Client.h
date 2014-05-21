@@ -19,16 +19,25 @@ namespace EventPie{
         public:
             Client();
             Client(
-                const std::string &uri,
-                ResponseCallback callback);
-            Client(
                 Uri uri,
                 ResponseCallback callback);
+            Client(
+                Method method, Uri uri,
+                ResponseCallback callback);
+            Client(
+                Method method, Uri uri,
+                Header header,
+                ResponseCallback callback);
+            Client(
+                Method method, Uri uri,
+                Header header,
+                void *data, int len,
+                ResponseCallback callback);
+            
             virtual ~Client();
             
         protected:
-            void open(const std::string &host, int port);
-            
+
             void request(
                 Method method, Uri uri,
                 void *data=nullptr, int len=0);

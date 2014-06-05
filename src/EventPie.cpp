@@ -13,14 +13,6 @@ using namespace std;
 using namespace std::chrono;
 using namespace EventPie::Config;
 
-/*
-#define OUT_Q tasks[taskQueueSwitch.load()]
-#define IN_Q tasks[1-taskQueueSwitch.load()]
-#define OUT_LOCK taskQueueMutex[taskQueueSwitch.load()]
-#define IN_LOCK taskQueueMutex[1-taskQueueSwitch.load()]
-#define SWITCH_Q taskQueueSwitch ^= 1;
-*/
-
 namespace EventPie{
     
     static vector<Timer*> timers;
